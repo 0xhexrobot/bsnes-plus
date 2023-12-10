@@ -12,3 +12,12 @@
 */out
 */bin
 *.app
+
+# qt creator
+*.cflags
+*.config
+*.creator
+*.creator.user
+*.cxxflags
+*.files
+*.includes
