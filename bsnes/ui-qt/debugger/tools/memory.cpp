@@ -4,6 +4,8 @@
 
 #include "qhexedit2/qhexedit.cpp"
 #include "qhexedit2/commands.cpp"
+#include "colorpicker/snescolor.cpp"
+#include "colorpicker/snescolorpicker.cpp"
 
 QVector <MemoryEditor*> memoryEditors;
 
@@ -95,7 +97,15 @@ MemoryEditor::MemoryEditor() {
   importButton = new QPushButton("Import");
   controlLayout->addWidget(importButton);
 
-  statusBar = new QLabel;
+  statusBar = new QStatusBar;
+  addressLabel = new QLabel;
+  valueLabel = new QLabel("Value:");
+  colorButton = new QPushButton;
+  colorButton->setFixedSize(16, 16);
+
+  statusBar->addWidget(addressLabel);
+  statusBar->addWidget(valueLabel);
+  statusBar->addWidget(colorButton);
   layout->addWidget(statusBar, 1, 0, 1, 2);
 
   connect(editor, SIGNAL(currentAddressChanged(qint64)), this, SLOT(showAddress(qint64)));
@@ -107,6 +117,7 @@ MemoryEditor::MemoryEditor() {
   connect(refreshButton, SIGNAL(released()), this, SLOT(refresh()));
   connect(exportButton, SIGNAL(released()), this, SLOT(exportMemory()));
   connect(importButton, SIGNAL(released()), this, SLOT(importMemory()));
+  connect(colorButton, SIGNAL(released()), this, SLOT(showColorPicker()));
   
   searchPos = -1;
   breakpointPos = -1;
@@ -185,10 +196,41 @@ void MemoryEditor::updateOffset() {
 
 void MemoryEditor::showAddress(qint64 address) {
   if (address < 0) {
-    statusBar->setText("");
+    addressLabel->setText("");
   } else {
-    statusBar->setText(QString::asprintf("Address: 0x%06X", address));
+    addressLabel->setText(QString::asprintf("Address: 0x%06X", address));
   }
+
+  updateAddressValue(address);
+}
+
+void MemoryEditor::updateAddressValue(qint64 address) {
+  int value;
+  QString valueText;
+
+  if(address < editor->editorSize() - 1) {
+    value = (reader(address + 1) << 8) | (reader(address));
+    valueText = QString::asprintf("Value: 0x%04X", value);
+    selectedAddress = address;
+
+    if(value < 0x7FFF) {
+        colorButton->setEnabled(true);
+        SnesColor* snesColor = new SnesColor(value, this);
+        colorButton->setStyleSheet("background-color: #" + snesColor->toRgbString() + "; border: 0; border-radius: 3px;");
+        selectedValue = value;
+    } else {
+        colorButton->setEnabled(false);
+        colorButton->setStyleSheet("");
+        selectedValue = 0;
+    }
+  } else {
+    value = reader(address);
+    valueText = QString::asprintf("Value: 0x%02X", value);
+    colorButton->setEnabled(false);
+    colorButton->setStyleSheet("");
+  }
+
+  valueLabel->setText(valueText);
 }
 
 void MemoryEditor::showContextMenu(const QPoint& pos) {
@@ -512,6 +554,28 @@ void MemoryEditor::importMemory(SNES::Memory &memory, const string &filename) co
     unsigned filesize = fp.size();
     for(unsigned i = 0; i < memory.size() && i < filesize; i++) memory.write(i, fp.read());
     fp.close();
+  }
+}
+
+void MemoryEditor::showColorPicker() {
+  SnesColor *color = new SnesColor(selectedValue, editor);
+  SnesColorPicker *colorPicker = new SnesColorPicker(editor, color);
+
+  if(colorPicker->exec() == QDialog::Accepted)
+  {
+    int newColor = colorPicker->snesColor->toInt();
+    selectedValue = newColor;
+
+    writer(selectedAddress, newColor & 0xFF);
+    writer(selectedAddress + 1, (newColor >> 8) & 0xFF);
+    editor->refresh();
+
+    //update value label
+    QString valueText = QString::asprintf("Value: 0x%04X", newColor);
+    valueLabel->setText(valueText);
+
+    //update color button
+    colorButton->setStyleSheet("background-color: #" + colorPicker->snesColor->toRgbString() + "; border: 0; border-radius: 3px;");
   }
 }
 

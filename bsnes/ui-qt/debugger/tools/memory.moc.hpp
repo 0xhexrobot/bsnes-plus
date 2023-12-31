@@ -28,7 +28,13 @@ public:
   QPushButton *exportButton;
   QPushButton *importButton;
 
-  QLabel *statusBar;
+  QLabel *addressLabel;
+  QLabel *valueLabel;
+  QPushButton *colorButton;
+  QStatusBar *statusBar;
+
+  uint16_t selectedValue;
+  qint64 selectedAddress;
 
   void autoUpdate();
   void synchronize();
@@ -54,6 +60,8 @@ private:
   
   void exportMemory(SNES::Memory&, const string&) const;
   void importMemory(SNES::Memory&, const string&) const;
+
+  void updateAddressValue(qint64);
   
 public slots:
   void show();
@@ -84,6 +92,8 @@ private slots:
   
   void exportMemory();
   void importMemory();
+
+  void showColorPicker();
 };
 
 //extern MemoryEditor *memoryEditor;

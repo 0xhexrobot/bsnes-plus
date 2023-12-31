@@ -56,6 +56,10 @@ using namespace ruby;
   #include "debugger/tools/memory.moc.hpp"
   #include "debugger/tools/properties.moc.hpp"
 
+  #include "debugger/tools/colorpicker/snescolor.moc.hpp"
+  #include "debugger/tools/colorpicker/colorpreview.moc.hpp"
+  #include "debugger/tools/colorpicker/snescolorpicker.moc.hpp"
+
   #include "debugger/ppu/base-renderer.hpp"
   #include "debugger/ppu/tile-renderer.hpp"
   #include "debugger/ppu/tilemap-renderer.hpp"
